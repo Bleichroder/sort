@@ -4,25 +4,39 @@ package quick
 //程可以递归进行，以此达到整个数据变成有序序列
 //PS:可以使用三数取中值或九数取中值选择比较合理的mid，之后交换到array[0]位置
 
-func Sort(array []int) {
-	if len(array) <= 1 {
-		return
+func Sort(data []int, done chan struct{}) {
+	fmt.Println(data)
+	if len(data) <= 1 {
+		done <- struct{}{}
+		return data
 	}
-
-	mid := array[0]
-	i := 0
-	head, tail := 0, len(array)-1
-	for head < tail {
-		if array[tail] > mid {
-			array[i], array[tail] = array[tail], array[i]
+	mid := data[0]
+	head, tail := 0, len(data)-1
+	for i := 1; i <= tail; {
+		if data[i] > mid {
+			data[i], data[tail] = data[tail], data[i]
 			tail--
 		} else {
-			array[i], array[head] = array[head], array[i]
+			data[i], data[head] = data[head], data[i]
 			head++
 			i++
 		}
 	}
-	array[head] = mid
-	Sort(array[:head])
-	Sort(array[head+1:])
+	childDone := make(chan struct{}, 2)
+	// sortArray(data[:head], childDone)
+	// sortArray(data[head+1:], childDone)
+	go sortArray(data[:head], childDone)
+	go sortArray(data[head+1:], childDone)
+	<-childDone
+	<-childDone
+
+	done <- struct{}{}
+	return data
 }
+
+func main() {
+	a := []int{5, 1, 1, 2, 0, 0}
+	done := make(chan struct{})
+	go sortArray(a, done)
+	<-done
+	fmt.Println(a)
